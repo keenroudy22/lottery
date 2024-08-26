@@ -56,7 +56,7 @@
     </div>
     <script>
         async function fetchSheetData() {
-            const url = 'https://docs.google.com/spreadsheets/d/1OgXbvmA8leuimASUFLbHeWMBhncy2_r1Il9S-NrBTTQ/pub?output=csv';
+            const url = 'https://docs.google.com/spreadsheets/d/1OgXbvmA8leuimASUFLbHeWMBhncy2_r1Il9S-NrBTTQ/pubhtml';
             const response = await fetch(url);
             const data = await response.text();
             const rows = data.split('\n');
