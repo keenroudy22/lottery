@@ -56,33 +56,46 @@
     </div>
     <script>
         async function fetchSheetData() {
-            const url = 'https://docs.google.com/spreadsheets/d/1OgXbvmA8leuimASUFLbHeWMBhncy2_r1Il9S-NrBTTQ/pubhtml';
-            const response = await fetch(url);
-            const data = await response.text();
-            const rows = data.split('\n');
-            const table = document.getElementById('dataTable');
-            const thead = table.querySelector('thead tr');
-            const tbody = table.querySelector('tbody');
+            const sheetUrl = 'https://docs.google.com/spreadsheets/d/1OgXbvmA8leuimASUFLbHeWMBhncy2_r1Il9S-NrBTTQ/export?format=csv';
+            try {
+                const response = await fetch(sheetUrl);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                const data = await response.text();
+                console.log('Fetched Data:', data); // Log raw CSV data
+                const rows = data.split('\n');
+                const table = document.getElementById('dataTable');
+                const thead = table.querySelector('thead tr');
+                const tbody = table.querySelector('tbody');
 
-            // Extract headers
-            const headers = rows[0].split(',');
-            headers.forEach(header => {
-                const th = document.createElement('th');
-                th.textContent = header;
-                thead.appendChild(th);
-            });
+                // Clear previous content
+                thead.innerHTML = '';
+                tbody.innerHTML = '';
 
-            // Extract data
-            rows.slice(1).forEach(row => {
-                const tr = document.createElement('tr');
-                const cells = row.split(',');
-                cells.forEach(cell => {
-                    const td = document.createElement('td');
-                    td.textContent = cell;
-                    tr.appendChild(td);
+                // Extract headers
+                const headers = rows[0].split(',');
+                headers.forEach(header => {
+                    const th = document.createElement('th');
+                    th.textContent = header;
+                    thead.appendChild(th);
                 });
-                tbody.appendChild(tr);
-            });
+
+                // Extract data
+                rows.slice(1).forEach(row => {
+                    if (row.trim() === '') return; // Skip empty rows
+                    const tr = document.createElement('tr');
+                    const cells = row.split(',');
+                    cells.forEach(cell => {
+                        const td = document.createElement('td');
+                        td.textContent = cell;
+                        tr.appendChild(td);
+                    });
+                    tbody.appendChild(tr);
+                });
+            } catch (error) {
+                console.error('Error fetching Google Sheets data:', error);
+            }
         }
 
         fetchSheetData();
