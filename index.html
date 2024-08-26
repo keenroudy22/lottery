@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+\<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -36,7 +36,6 @@
             text-align: left;
             border-bottom: 1px solid #e0e0e0;
             font-size: 16px;
-            word-wrap: break-word; /* Ensure content wraps within cells */
         }
         th {
             background-color: #3498db;
@@ -54,13 +53,6 @@
             font-weight: bold;
             margin-bottom: 10px;
         }
-        .player-name {
-            font-weight: bold;
-        }
-        .teams-column {
-            font-style: italic;
-            color: #555;
-        }
     </style>
 </head>
 <body>
@@ -70,7 +62,8 @@
             <thead>
                 <tr>
                     <th>Player</th>
-                    <th>Teams</th>
+                    <th>Teams (AFC)</th>
+                    <th>Teams (NFC)</th>
                     <th>Total Owed</th>
                 </tr>
             </thead>
@@ -87,48 +80,38 @@
                 const data = await response.text();
                 const rows = data.split('\n');
                 const table = document.getElementById('dataTable');
-                const thead = table.querySelector('thead tr');
                 const tbody = table.querySelector('tbody');
 
                 // Clear previous content
-                thead.innerHTML = '';
                 tbody.innerHTML = '';
 
                 // Extract headers
                 const headers = rows[0].split(',');
-                headers.forEach(header => {
-                    const th = document.createElement('th');
-                    th.textContent = header;
-                    thead.appendChild(th);
-                });
+                if (headers.length < 6) {
+                    console.error('Unexpected number of columns in data');
+                    return;
+                }
 
                 // Extract data
                 rows.slice(1).forEach(row => {
                     if (row.trim() === '') return; // Skip empty rows
-                    const tr = document.createElement('tr');
                     const cells = row.split(',');
-                    const playerName = cells[0];
-                    const afcTeams = cells.slice(1, 3).join(', ');
-                    const nfcTeams = cells.slice(3, 5).join(', ');
-                    const teams = `${afcTeams}, ${nfcTeams}`;
+                    if (cells.length < 6) {
+                        console.error('Unexpected number of columns in data row');
+                        return;
+                    }
+                    const tr = document.createElement('tr');
+                    const player = cells[0];
+                    const afcTeams = `${cells[1]}, ${cells[2]}`;
+                    const nfcTeams = `${cells[3]}, ${cells[4]}`;
+                    const totalOwed = cells[5];
 
-                    // Player Name
-                    const playerTd = document.createElement('td');
-                    playerTd.className = 'player-name';
-                    playerTd.textContent = playerName;
-                    tr.appendChild(playerTd);
-
-                    // Combined Teams
-                    const teamsTd = document.createElement('td');
-                    teamsTd.className = 'teams-column';
-                    teamsTd.textContent = teams;
-                    tr.appendChild(teamsTd);
-
-                    // Total Owed
-                    const totalOwedTd = document.createElement('td');
-                    totalOwedTd.textContent = cells[5] || ''; // Adjust the index based on your sheet
-                    tr.appendChild(totalOwedTd);
-
+                    tr.innerHTML = `
+                        <td>${player}</td>
+                        <td>${afcTeams}</td>
+                        <td>${nfcTeams}</td>
+                        <td>$${totalOwed}</td>
+                    `;
                     tbody.appendChild(tr);
                 });
             } catch (error) {
