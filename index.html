@@ -48,17 +48,6 @@
         tr:hover {
             background-color: #f1f1f1;
         }
-        .team-column {
-            display: flex;
-            flex-direction: column;
-        }
-        .team-column span {
-            display: block;
-            margin-bottom: 4px;
-        }
-        .team-column span:not(:last-child) {
-            border-bottom: 1px solid #ddd;
-        }
         caption {
             font-size: 18px;
             font-weight: bold;
@@ -72,7 +61,10 @@
         <table id="dataTable">
             <thead>
                 <tr>
-                    <!-- Headers will be inserted here -->
+                    <th>Player</th>
+                    <th>Teams (AFC)</th>
+                    <th>Teams (NFC)</th>
+                    <th>Total Owed</th>
                 </tr>
             </thead>
             <tbody>
@@ -86,44 +78,40 @@
             try {
                 const response = await fetch(sheetUrl);
                 const data = await response.text();
-                const rows = data.split('\n').filter(row => row.trim() !== ''); // Filter out empty rows
+                const rows = data.split('\n');
                 const table = document.getElementById('dataTable');
-                const thead = table.querySelector('thead tr');
                 const tbody = table.querySelector('tbody');
 
                 // Clear previous content
-                thead.innerHTML = '';
                 tbody.innerHTML = '';
 
                 // Extract headers
                 const headers = rows[0].split(',');
-                headers[2] = 'Teams'; // Combine AFC and NFC columns
-                headers.forEach(header => {
-                    const th = document.createElement('th');
-                    th.textContent = header;
-                    thead.appendChild(th);
-                });
+                if (headers.length < 6) {
+                    console.error('Unexpected number of columns in data');
+                    return;
+                }
 
                 // Extract data
                 rows.slice(1).forEach(row => {
+                    if (row.trim() === '') return; // Skip empty rows
                     const cells = row.split(',');
-                    if (cells.length < 6) return; // Ensure we have enough data
-
-                    const playerName = cells[0];
+                    if (cells.length < 6) {
+                        console.error('Unexpected number of columns in data row');
+                        return;
+                    }
+                    const tr = document.createElement('tr');
+                    const player = cells[0];
                     const afcTeams = `${cells[1]}, ${cells[2]}`;
                     const nfcTeams = `${cells[3]}, ${cells[4]}`;
                     const totalOwed = cells[5];
 
-                    const tr = document.createElement('tr');
                     tr.innerHTML = `
-                        <td>${playerName}</td>
-                        <td class="team-column">
-                            <span>AFC: ${afcTeams}</span>
-                            <span>NFC: ${nfcTeams}</span>
-                        </td>
+                        <td>${player}</td>
+                        <td>${afcTeams}</td>
+                        <td>${nfcTeams}</td>
                         <td>$${totalOwed}</td>
                     `;
-                    
                     tbody.appendChild(tr);
                 });
             } catch (error) {
