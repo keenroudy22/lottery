@@ -1,4 +1,4 @@
-const sheetUrl = 'https://docs.google.com/spreadsheets/d/1OgXbvmA8leuimASUFLbHeWMBhncy2_r1Il9S-NrBTTQ/pub?output=csv'; // Your Google Sheets CSV URL
+const sheetUrl = 'https://docs.google.com/spreadsheets/d/1OgXbvmA8leuimASUFLbHeWMBhncy2_r1Il9S-NrBTTQ/pub?output=csv';
 
 document.getElementById('submitButton').addEventListener('click', () => {
     const teamName = document.getElementById('teamName').value.trim();
@@ -10,9 +10,9 @@ document.getElementById('submitButton').addEventListener('click', () => {
 async function fetchSheetData(teamName) {
     try {
         const response = await fetch(sheetUrl);
-        const csvData = await response.text();
-        const data = Papa.parse(csvData, { header: true }).data;
-        processSheetData(data, teamName);
+        const data = await response.text();
+        const parsedData = Papa.parse(data, { header: true }).data;
+        processSheetData(parsedData, teamName);
     } catch (error) {
         console.error("Error fetching Google Sheets data:", error);
     }
@@ -20,33 +20,31 @@ async function fetchSheetData(teamName) {
 
 function processSheetData(data, teamName) {
     let winnerFound = false;
+    let updatedData = [];
 
     data.forEach(player => {
-        const playerName = player.Player;
-        const afcTeams = [player.AFC1, player.AFC2];
-        const nfcTeams = [player.NFC1, player.NFC2];
-        let totalOwed = parseFloat(player.TotalOwed) || 0;
+        let totalOwed = parseFloat(player['Total Owed']) || 0;
 
-        if (afcTeams.includes(teamName) || nfcTeams.includes(teamName)) {
+        if (player['AFC1'] === teamName || player['AFC2'] === teamName || player['NFC1'] === teamName || player['NFC2'] === teamName) {
             totalOwed += 70;
             winnerFound = true;
         }
 
-        if (winnerFound) {
-            updateSheet(playerName, totalOwed);
-        }
+        updatedData.push({
+            Player: player['Player'],
+            AFC1: player['AFC1'],
+            AFC2: player['AFC2'],
+            NFC1: player['NFC1'],
+            NFC2: player['NFC2'],
+            'Total Owed': totalOwed
+        });
     });
 
     if (winnerFound) {
-        displayResults(data);
+        displayResults(updatedData);
     } else {
         alert("No player has the winning team.");
     }
-}
-
-function updateSheet(playerName, totalOwed) {
-    // Logic to update Google Sheets with the new total
-    // This would typically involve Google Apps Script or another service
 }
 
 function displayResults(data) {
@@ -56,8 +54,10 @@ function displayResults(data) {
     data.forEach(player => {
         const row = document.createElement('tr');
         row.innerHTML = `
-            <td>${player.Player}</td>
-            <td>${player.TotalOwed}</td>
+            <td>${player['Player']}</td>
+            <td>${player['AFC1']}, ${player['AFC2']}</td>
+            <td>${player['NFC1']}, ${player['NFC2']}</td>
+            <td>$${player['Total Owed']}</td>
         `;
         tableBody.appendChild(row);
     });
