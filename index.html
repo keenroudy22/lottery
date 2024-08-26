@@ -50,48 +50,48 @@
         });
 
         async function fetchSheetData(teamName) {
-    try {
-        const response = await fetch(sheetUrl);
-        const data = await response.text();
-        console.log('Fetched Data:', data); // Log raw CSV data
-        const parsedData = Papa.parse(data, { header: true }).data;
-        console.log('Parsed Data:', parsedData); // Log parsed data
-        processSheetData(parsedData, teamName);
-    } catch (error) {
-        console.error("Error fetching Google Sheets data:", error);
-    }
-}
-
-function processSheetData(data, teamName) {
-    let winnerFound = false;
-    let updatedData = [];
-
-    data.forEach(player => {
-        console.log('Processing Player:', player); // Log each player’s data
-        let totalOwed = parseFloat(player['Total Owed']) || 0;
-
-        if (player['AFC1'] === teamName || player['AFC2'] === teamName || player['NFC1'] === teamName || player['NFC2'] === teamName) {
-            totalOwed += 70;
-            winnerFound = true;
+            try {
+                const response = await fetch(sheetUrl);
+                const data = await response.text();
+                console.log('Fetched Data:', data); // Log raw CSV data
+                const parsedData = Papa.parse(data, { header: true }).data;
+                console.log('Parsed Data:', parsedData); // Log parsed data
+                processSheetData(parsedData, teamName);
+            } catch (error) {
+                console.error("Error fetching Google Sheets data:", error);
+            }
         }
 
-        updatedData.push({
-            Player: player['Player'],
-            AFC1: player['AFC1'],
-            AFC2: player['AFC2'],
-            NFC1: player['NFC1'],
-            NFC2: player['NFC2'],
-            'Total Owed': totalOwed
-        });
-    });
+        function processSheetData(data, teamName) {
+            let winnerFound = false;
+            let updatedData = [];
 
-    if (winnerFound) {
-        displayResults(updatedData);
-        updateChart(updatedData);
-    } else {
-        alert("No player has the winning team.");
-    }
-}
+            data.forEach(player => {
+                console.log('Processing Player:', player); // Log each player’s data
+                let totalOwed = parseFloat(player['Total Owed']) || 0;
+
+                if (player['AFC1'] === teamName || player['AFC2'] === teamName || player['NFC1'] === teamName || player['NFC2'] === teamName) {
+                    totalOwed += 70;
+                    winnerFound = true;
+                }
+
+                updatedData.push({
+                    Player: player['Player'],
+                    AFC1: player['AFC1'],
+                    AFC2: player['AFC2'],
+                    NFC1: player['NFC1'],
+                    NFC2: player['NFC2'],
+                    'Total Owed': totalOwed
+                });
+            });
+
+            if (winnerFound) {
+                displayResults(updatedData);
+                updateChart(updatedData);
+            } else {
+                alert("No player has the winning team.");
+            }
+        }
 
         function displayResults(data) {
             const tableBody = document.querySelector('#resultsTable tbody');
@@ -110,6 +110,7 @@ function processSheetData(data, teamName) {
         }
 
         function updateChart(data) {
+            console.log('Chart Data:', data); // Log chart data
             const ctx = document.getElementById('totalsChart').getContext('2d');
             const chartData = {
                 labels: data.map(player => player['Player']),
