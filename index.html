@@ -86,7 +86,7 @@
             try {
                 const response = await fetch(sheetUrl);
                 const data = await response.text();
-                const rows = data.split('\n');
+                const rows = data.split('\n').filter(row => row.trim() !== ''); // Filter out empty rows
                 const table = document.getElementById('dataTable');
                 const thead = table.querySelector('thead tr');
                 const tbody = table.querySelector('tbody');
@@ -106,20 +106,20 @@
 
                 // Extract data
                 rows.slice(1).forEach(row => {
-                    if (row.trim() === '') return; // Skip empty rows
-                    const tr = document.createElement('tr');
                     const cells = row.split(',');
-                    
+                    if (cells.length < 6) return; // Ensure we have enough data
+
                     const playerName = cells[0];
                     const afcTeams = `${cells[1]}, ${cells[2]}`;
                     const nfcTeams = `${cells[3]}, ${cells[4]}`;
                     const totalOwed = cells[5];
 
+                    const tr = document.createElement('tr');
                     tr.innerHTML = `
                         <td>${playerName}</td>
                         <td class="team-column">
-                            <span>${afcTeams}</span>
-                            <span>${nfcTeams}</span>
+                            <span>AFC: ${afcTeams}</span>
+                            <span>NFC: ${nfcTeams}</span>
                         </td>
                         <td>$${totalOwed}</td>
                     `;
