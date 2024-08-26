@@ -53,6 +53,13 @@
             font-weight: bold;
             margin-bottom: 10px;
         }
+        .player-name {
+            font-weight: bold;
+        }
+        .team-list {
+            font-style: italic;
+            color: #555;
+        }
     </style>
 </head>
 <body>
@@ -62,8 +69,8 @@
             <thead>
                 <tr>
                     <th>Player</th>
-                    <th>Teams (AFC)</th>
-                    <th>Teams (NFC)</th>
+                    <th>AFC Teams</th>
+                    <th>NFC Teams</th>
                     <th>Total Owed</th>
                 </tr>
             </thead>
@@ -80,38 +87,36 @@
                 const data = await response.text();
                 const rows = data.split('\n');
                 const table = document.getElementById('dataTable');
+                const thead = table.querySelector('thead tr');
                 const tbody = table.querySelector('tbody');
 
                 // Clear previous content
+                thead.innerHTML = '';
                 tbody.innerHTML = '';
 
                 // Extract headers
                 const headers = rows[0].split(',');
-                if (headers.length < 6) {
-                    console.error('Unexpected number of columns in data');
-                    return;
-                }
+                headers.forEach(header => {
+                    const th = document.createElement('th');
+                    th.textContent = header;
+                    thead.appendChild(th);
+                });
 
                 // Extract data
                 rows.slice(1).forEach(row => {
                     if (row.trim() === '') return; // Skip empty rows
-                    const cells = row.split(',');
-                    if (cells.length < 6) {
-                        console.error('Unexpected number of columns in data row');
-                        return;
-                    }
                     const tr = document.createElement('tr');
-                    const player = cells[0];
-                    const afcTeams = `${cells[1]}, ${cells[2]}`;
-                    const nfcTeams = `${cells[3]}, ${cells[4]}`;
-                    const totalOwed = cells[5];
-
-                    tr.innerHTML = `
-                        <td>${player}</td>
-                        <td>${afcTeams}</td>
-                        <td>${nfcTeams}</td>
-                        <td>$${totalOwed}</td>
-                    `;
+                    const cells = row.split(',');
+                    cells.forEach((cell, index) => {
+                        const td = document.createElement('td');
+                        if (index === 0) {
+                            td.className = 'player-name';
+                        } else if (index === 1 || index === 2) {
+                            td.className = 'team-list';
+                        }
+                        td.textContent = cell;
+                        tr.appendChild(td);
+                    });
                     tbody.appendChild(tr);
                 });
             } catch (error) {
