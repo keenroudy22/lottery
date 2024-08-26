@@ -7,6 +7,8 @@
     <link rel="stylesheet" href="styles.css">
     <!-- Include Papa Parse library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    <!-- Include Chart.js library -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <div class="container">
@@ -31,6 +33,10 @@
                     <!-- Populated by script -->
                 </tbody>
             </table>
+        </div>
+        <div id="chartContainer">
+            <h2>Totals Chart</h2>
+            <canvas id="totalsChart"></canvas>
         </div>
     </div>
     <script>
@@ -78,6 +84,7 @@
 
             if (winnerFound) {
                 displayResults(updatedData);
+                updateChart(updatedData);
             } else {
                 alert("No player has the winning team.");
             }
@@ -96,6 +103,37 @@
                     <td>$${player['Total Owed']}</td>
                 `;
                 tableBody.appendChild(row);
+            });
+        }
+
+        function updateChart(data) {
+            const ctx = document.getElementById('totalsChart').getContext('2d');
+            const chartData = {
+                labels: data.map(player => player['Player']),
+                datasets: [{
+                    label: 'Total Owed ($)',
+                    data: data.map(player => player['Total Owed']),
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 1
+                }]
+            };
+
+            if (window.myChart) {
+                window.myChart.destroy();
+            }
+
+            window.myChart = new Chart(ctx, {
+                type: 'bar',
+                data: chartData,
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
             });
         }
     </script>
