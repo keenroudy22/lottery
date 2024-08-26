@@ -1,4 +1,4 @@
-\<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -48,10 +48,11 @@
         tr:hover {
             background-color: #f1f1f1;
         }
-        caption {
-            font-size: 18px;
+        .player-name {
             font-weight: bold;
-            margin-bottom: 10px;
+        }
+        .teams-column {
+            white-space: pre-wrap; /* Allows text to wrap naturally */
         }
     </style>
 </head>
@@ -62,8 +63,7 @@
             <thead>
                 <tr>
                     <th>Player</th>
-                    <th>Teams (AFC)</th>
-                    <th>Teams (NFC)</th>
+                    <th>Teams</th>
                     <th>Total Owed</th>
                 </tr>
             </thead>
@@ -101,15 +101,14 @@
                         return;
                     }
                     const tr = document.createElement('tr');
-                    const player = cells[0];
-                    const afcTeams = `${cells[1]}, ${cells[2]}`;
-                    const nfcTeams = `${cells[3]}, ${cells[4]}`;
+                    const player = `<span class="player-name">${cells[0]}</span>`;
+                    const afcTeams = `${cells[1]}\n${cells[2]}`;
+                    const nfcTeams = `${cells[3]}\n${cells[4]}`;
                     const totalOwed = cells[5];
 
                     tr.innerHTML = `
                         <td>${player}</td>
-                        <td>${afcTeams}</td>
-                        <td>${nfcTeams}</td>
+                        <td class="teams-column">${afcTeams}\n${nfcTeams}</td>
                         <td>$${totalOwed}</td>
                     `;
                     tbody.appendChild(tr);
