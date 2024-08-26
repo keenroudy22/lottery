@@ -1,4 +1,4 @@
-const sheetUrl = 'YOUR_PUBLISHED_SHEET_URL'; // Replace with your Google Sheets published URL
+const sheetUrl = 'https://docs.google.com/spreadsheets/d/1OgXbvmA8leuimASUFLbHeWMBhncy2_r1Il9S-NrBTTQ/pub?gid=0&single=true&output=csv'; // Replace with your Google Sheets published URL
 
 document.getElementById('submitButton').addEventListener('click', () => {
     const teamName = document.getElementById('teamName').value.trim();
