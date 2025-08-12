@@ -5,139 +5,178 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>NFL Lottery — Scoreboard</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=6"/>
+  <link rel="stylesheet" href="styles.css?v=9"/>
   <link rel="icon" href="favicon.ico"/>
 </head>
 <body>
-  <header class="site-header">
-    <div class="container">
-      <h1>🏈 NFL Lottery</h1>
-      <div class="meta">
-        <span class="legend-dot afc"></span><span class="legend-label">AFC</span>
-        <span class="legend-dot nfc"></span><span class="legend-label">NFC</span>
-        <span class="legend-badge">Weeks in (parentheses) = WINNER</span>
+<header class="site-header">
+  <div class="container">
+    <h1>🏈 NFL Lottery</h1>
+    <div class="meta">
+      <span class="legend-dot afc"></span><span class="legend-label">AFC</span>
+      <span class="legend-dot nfc"></span><span class="legend-label">NFC</span>
+      <span class="legend-badge">Weeks in (parentheses) = Scored 27</span>
+    </div>
+  </div>
+</header>
+
+<main class="container">
+  <section id="potWrap" class="pot-wrap" aria-live="polite"></section>
+
+  <section class="controls">
+    <div class="note">Admin: <a href="admin.html">mark winners</a></div>
+  </section>
+
+  <section id="cards" class="cards"></section>
+</main>
+
+<footer class="site-footer">
+  <div class="container"><p>Built for Kinnon</p></div>
+</footer>
+
+<script>
+// === CONFIG ===
+// Players sheet (your current sheet/tab published as CSV)
+const SHEET_PLAYERS_CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRIVvTEgE3OKW_mM43p_3MXRzEuZm1DIVvk6sG8GSxIlVh8sYv5Wl2GT6awHuKpuJx_rN3Q3u6Hz8gp/pub?gid=0&single=true&output=csv';
+// Weeks sheet (publish a "Weeks" tab as CSV; set link here)
+const SHEET_WEEKS_CSV = 'https://docs.google.com/spreadsheets/d/1OgXbvmA8leuimASUFLbHeWMBhncy2_r1Il9S-NrBTTQ/edit?gid=740088472#gid=740088472';
+// Pot rules
+const BUY_IN = 20;           // $ per player per week
+const COUNT_PLAYERS = 8;     // number of players contributing
+
+const cardsEl = document.getElementById('cards');
+const potWrap = document.getElementById('potWrap');
+
+function money(n){ return (parseFloat(n)||0).toLocaleString(undefined,{style:'currency',currency:'USD'}); }
+
+function normBaseName(s){
+  // normalize and return the last word (e.g., "Minnesota Vikings" -> "vikings"; "49ers" -> "49ers")
+  const cleaned = String(s||'')
+    .replace(/\(([^)]*)\)/g,'')
+    .replace(/[–—]/g,'-')
+    .replace(/[^\w\s-]/g,'')
+    .replace(/\s+/g,' ')
+    .trim()
+    .toLowerCase();
+  if(!cleaned) return '';
+  const parts = cleaned.split(' ');
+  return parts[parts.length-1];
+}
+
+function logoHTML(team){
+  if(!team) return '';
+  const base = normBaseName(team);
+  const src = `logos/${base}.svg`;
+  const img = `<img class="team-logo" src="${src}" alt="${base} logo" onerror="this.classList.add('missing')">`;
+  return `<div class="team">${img}<span class="team-name">${team.replace(/\(([^)]*)\)/g,'').trim()}</span>`;
+}
+
+function badgesHTML(weeksMap, team){
+  const base = normBaseName(team);
+  const weeks = weeksMap.get(base) || [];
+  return weeks.map(w => `<span class="week-badge">(${w})</span>`).join('');
+}
+
+async function getCSV(url){
+  const res = await fetch(url, {cache:'no-store'});
+  const text = await res.text();
+  return text.split('\n').filter(Boolean).map(r => r.split(','));
+}
+
+async function load(){
+  cardsEl.innerHTML = '<div class="loading">Loading…</div>';
+  potWrap.innerHTML = '';
+
+  const [playersRows, weeksRows] = await Promise.all([getCSV(SHEET_PLAYERS_CSV), getCSV(SHEET_WEEKS_CSV)]);
+
+  // Build weeks map: base team -> [weeks]
+  weeksRows.shift(); // header
+  const weeksMap = new Map();
+  const weekSet = new Set();
+  for(const row of weeksRows){
+    const week = parseInt(row[0],10);
+    const team = (row[1]||'').trim();
+    if(!week || !team) continue;
+    const base = normBaseName(team);
+    if(!weeksMap.has(base)) weeksMap.set(base, []);
+    weeksMap.get(base).push(week);
+    weekSet.add(week);
+  }
+  const weeksSorted = [...weekSet].sort((a,b)=>a-b);
+
+  // Build players list (skip POT row)
+  playersRows.shift(); // header
+  const players = [];
+  for(const cols of playersRows){
+    if(cols.length < 6) continue;
+    const [player, afc1, afc2, nfc1, nfc2] = cols;
+    if(!player || player.toLowerCase()==='pot') continue;
+    players.push({player, teams:[afc1,afc2,nfc1,nfc2]});
+  }
+
+  // Compute totals & current week pot with rollover
+  const basePot = BUY_IN * COUNT_PLAYERS;
+  const totals = new Map(players.map(p=>[p.player,0]));
+  let carry = 0;
+  const lastWeek = weeksSorted.length ? weeksSorted[weeksSorted.length-1] : 1;
+  let lastWeekWinners = 0;
+  weeksSorted.forEach(week => {
+    const winners = new Set();
+    players.forEach(p => {
+      const hit = p.teams.some(t => (weeksMap.get(normBaseName(t))||[]).includes(week));
+      if(hit) winners.add(p.player);
+    });
+    let pot = basePot + carry;
+    if(winners.size === 0){
+      carry = pot;
+    }else{
+      const share = pot / winners.size;
+      winners.forEach(name => totals.set(name, (totals.get(name)||0) + share));
+      carry = 0;
+    }
+    if(week === lastWeek){
+      lastWeekWinners = winners.size;
+      potWrap.innerHTML = `<article class="pot-card"><div class="pot-inner">
+        <div class="pot-title">Weekly POT (Week ${week})</div>
+        <div class="pot-amount">${money(pot)}</div>
+        <div class="pot-sub">${winners.size ? winners.size + ' winner' + (winners.size>1?'s':'') : 'Rolls over if no winner'}</div>
+      </div></article>`;
+    }
+  });
+
+  // Render
+  cardsEl.innerHTML = '';
+  players.forEach(p => {
+    const [afc1,afc2,nfc1,nfc2] = p.teams;
+    const card = document.createElement('article');
+    card.className = 'card';
+    card.innerHTML = `
+      <div class="card-head">
+        <div class="avatar">${p.player.charAt(0).toUpperCase()}</div>
+        <div class="who">
+          <h2>${p.player}</h2>
+          <div class="sub">Current winnings</div>
+        </div>
+        <div class="total ${totals.get(p.player)>0 ? 'won' : ''}">${money(totals.get(p.player)||0)}</div>
       </div>
-    </div>
-  </header>
+      <div class="teams">
+        <div class="col">
+          <div class="col-title"><span class="dot afc"></span>AFC</div>
+          <div>${logoHTML(afc1)}${badgesHTML(weeksMap, afc1)}</div>
+          <div>${logoHTML(afc2)}${badgesHTML(weeksMap, afc2)}</div>
+        </div>
+        <div class="col">
+          <div class="col-title"><span class="dot nfc"></span>NFC</div>
+          <div>${logoHTML(nfc1)}${badgesHTML(weeksMap, nfc1)}</div>
+          <div>${logoHTML(nfc2)}${badgesHTML(weeksMap, nfc2)}</div>
+        </div>
+      </div>`;
+    cardsEl.appendChild(card);
+  });
+}
 
-  <main class="container">
-    <section id="potWrap" class="pot-wrap" aria-live="polite"></section>
-
-    <section class="controls">
-      <button id="refreshBtn" class="btn">Refresh</button>
-      <div class="note">Data pulls from your Google Sheet. Totals are shown on the right of each card.</div>
-    </section>
-
-    <section id="cards" class="cards"></section>
-  </main>
-
-  <footer class="site-footer">
-    <div class="container">
-      <p>Built for Kinnon • <a href="README.html">README</a></p>
-    </div>
-  </footer>
-
-  <script>
-    const SHEET_CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRIVvTEgE3OKW_mM43p_3MXRzEuZm1DIVvk6sG8GSxIlVh8sYv5Wl2GT6awHuKpuJx_rN3Q3u6Hz8gp/pub?gid=0&single=true&output=csv';
-    const TEAM_LOGOS = {"arizona cardinals": "cardinals.svg", "atlanta falcons": "falcons.svg", "falcons": "falcons.svg", "carolina panthers": "panthers.svg", "chicago bears": "bears.svg", "dallas cowboys": "cowboys.svg", "detroit lions": "lions.svg", "green bay packers": "packers.svg", "los angeles rams": "rams.svg", "minnesota vikings": "vikings.svg", "new orleans saints": "saints.svg", "new york giants": "giants.svg", "philadelphia eagles": "eagles.svg", "san francisco 49ers": "49ers.svg", "seattle seahawks": "seahawks.svg", "tampa bay buccaneers": "buccaneers.svg", "washington commanders": "commanders.svg", "baltimore ravens": "ravens.svg", "buffalo bills": "bills.svg", "cincinnati bengals": "bengals.svg", "cleveland browns": "browns.svg", "denver broncos": "broncos.svg", "houston texans": "texans.svg", "indianapolis colts": "colts.svg", "jacksonville jaguars": "jaguars.svg", "kansas city chiefs": "chiefs.svg", "las vegas raiders": "raiders.svg", "los angeles chargers": "chargers.svg", "miami dolphins": "dolphins.svg", "new england patriots": "patriots.svg", "new york jets": "jets.svg", "pittsburgh steelers": "steelers.svg", "tennessee titans": "titans.svg", "49ers": "49ers.svg", "rams": "rams.svg", "chargers": "chargers.svg", "raiders": "raiders.svg", "chiefs": "chiefs.svg", "bengals": "bengals.svg", "browns": "browns.svg", "broncos": "broncos.svg", "vikings": "vikings.svg", "eagles": "eagles.svg", "cowboys": "cowboys.svg", "giants": "giants.svg", "packers": "packers.svg", "lions": "lions.svg", "saints": "saints.svg", "panthers": "panthers.svg", "seahawks": "seahawks.svg", "buccaneers": "buccaneers.svg", "commanders": "commanders.svg", "patriots": "patriots.svg", "dolphins": "dolphins.svg", "steelers": "steelers.svg", "texans": "texans.svg", "colts": "colts.svg", "jaguars": "jaguars.svg", "titans": "titans.svg", "jets": "jets.svg", "bills": "bills.svg", "ravens": "ravens.svg", "bears": "bears.svg", "cardinals": "cardinals.svg"};
-
-    const cardsEl = document.getElementById('cards');
-    const potWrap = document.getElementById('potWrap');
-    const refreshBtn = document.getElementById('refreshBtn');
-
-    function money(v){ if(v===undefined||v===null) return '$0.00'; const n=parseFloat(String(v).replace(/[^\d.-]/g,''))||0; return n.toLocaleString(undefined,{style:'currency',currency:'USD',minimumFractionDigits:2}); }
-
-    function normalizeTeamName(s){
-      if(!s) return '';
-      const cleaned = String(s).replace(/\u00A0|\u2007|\u202F/g,' ')
-        .replace(/\(([^)]*)\)/g,'')
-        .replace(/[–—]/g,'-')
-        .replace(/[^\w\s-]/g,'')
-        .replace(/\s+/g,' ')
-        .trim()
-        .toLowerCase();
-      return cleaned.includes('falcon') ? 'falcons' : cleaned;
-    }
-
-    function teamToLogoHTML(original, conf){
-      if(!original || !original.trim()) return '';
-      const badges = [...original.matchAll(/\(([^)]+)\)/g)].map(m=>m[1]);
-      const key = normalizeTeamName(original);
-      const file = TEAM_LOGOS[key] || TEAM_LOGOS[key.replace('los angeles ','la ')] || TEAM_LOGOS[key.split(' ').slice(-1)[0]];
-      const logoSrc = file ? `logos/${file}` : '';
-      const img = logoSrc
-        ? `<img class="team-logo" src="${logoSrc}" alt="${key} logo" onerror="this.classList.add('missing')">`
-        : `<span class="fallback">${original.replace(/\(([^)]+)\)/g,'').trim()}</span>`;
-      const badgeHTML = badges.map(b => `<span class="week-badge">(${b})</span>`).join('');
-      return `<div class="team ${conf}">${img}<span class="team-name">${original.replace(/\(([^)]+)\)/g,'').trim()}</span>${badgeHTML}</div>`;
-    }
-
-    function buildPotCard(total){
-      const card = document.createElement('article');
-      card.className = 'pot-card';
-      card.innerHTML = `
-        <div class="pot-inner">
-          <div class="pot-title">Weekly POT</div>
-          <div class="pot-amount">${money(total)}</div>
-          <div class="pot-sub">Rolls over if no winner</div>
-        </div>`;
-      return card;
-    }
-
-    async function load(){
-      cardsEl.innerHTML = '<div class="loading">Loading…</div>';
-      potWrap.innerHTML = '';
-      try{
-        const res = await fetch(SHEET_CSV, {cache: 'no-store'});
-        const text = await res.text();
-        const rows = text.split('\n').filter(r => r.trim().length);
-        rows.shift(); // headers
-        const items = rows.map(r => r.split(','));
-        cardsEl.innerHTML='';
-
-        let potRow = null;
-        const players = [];
-        items.forEach(cols => { if(cols.length < 6) return;
-          if(String(cols[0]).trim().toLowerCase() === 'pot'){ potRow = cols; } else { players.push(cols); }
-        });
-
-        if(potRow){ const potTotal = potRow[5]; potWrap.appendChild(buildPotCard(potTotal)); }
-
-        players.forEach(cols => {
-          const [player, afc1, afc2, nfc1, nfc2, total] = cols;
-          const safePlayer = player && player.trim() ? player : 'n/a';
-          const card = document.createElement('article');
-          card.className = 'card';
-          card.innerHTML = `
-            <div class="card-head">
-              <div class="avatar">${(safePlayer || '?').charAt(0).toUpperCase()}</div>
-              <div class="who"><h2>${safePlayer}</h2><div class="sub">Current winnings</div></div>
-              <div class="total ${parseFloat(total) > 0 ? 'won' : ''}">${money(total)}</div>
-            </div>
-            <div class="teams">
-              <div class="col">
-                <div class="col-title"><span class="dot afc"></span>AFC</div>
-                ${teamToLogoHTML(afc1 || '', 'afc')}
-                ${teamToLogoHTML(afc2 || '', 'afc')}
-              </div>
-              <div class="col">
-                <div class="col-title"><span class="dot nfc"></span>NFC</div>
-                ${teamToLogoHTML(nfc1 || '', 'nfc')}
-                ${teamToLogoHTML(nfc2 || '', 'nfc')}
-              </div>
-            </div>`;
-          cardsEl.appendChild(card);
-        });
-      }catch(err){
-        cardsEl.innerHTML = '<div class="error">Could not load sheet. Check the published CSV link.</div>';
-        console.error(err);
-      }
-    }
-
-    refreshBtn.addEventListener('click', load);
-    load();
-  </script>
+load();
+</script>
 </body>
 </html>

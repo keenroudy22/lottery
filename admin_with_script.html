@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NFL Lottery — Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root{--bg:#0b1220;--panel:#10192b;--text:#e7eefb;--muted:#9fb2d9;--win:#39d98a}
+    *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui}
+    .container{width:min(1000px,92vw);margin:24px auto}
+    h1{margin:0 0 8px} .sub{color:var(--muted);margin:0 0 16px}
+    .controls{display:flex;gap:12px;align-items:center;margin:12px 0 16px}
+    input,button{font:inherit}
+    input[type="number"]{width:110px;padding:8px;border-radius:10px;border:1px solid #2a3550;background:#0f1830;color:#e7eefb}
+    button{padding:10px 14px;border-radius:12px;border:1px solid #41527b;background:#1a2742;color:#e7eefb;cursor:pointer}
+    button:hover{border-color:#5b75ac}
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:12px}
+    .team{background:linear-gradient(180deg,#10192b,#0e1526);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:10px;display:grid;gap:8px;place-items:center;cursor:pointer;transition:transform .12s}
+    .team:hover{transform:translateY(-1px)} .team.active{outline:2px solid var(--win)}
+    .logo{width:60px;height:60px;object-fit:contain;background:rgba(255,255,255,.06);border-radius:10px;padding:8px;border:1px solid rgba(255,255,255,.08)}
+    .name{font-size:12px;color:#c7d7ff}
+    .toast{margin-left:6px;color:var(--muted)}
+    footer{margin:20px 0;color:var(--muted);font-size:12px}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🏈 NFL Lottery — Admin</h1>
+    <p class="sub">Pick a <b>week</b> and click the team logos that hit <b>27</b>. Click <b>Save</b> to write to the Google Sheet.</p>
+
+    <div class="controls">
+      <label>Week <input id="weekInput" type="number" min="1" max="21" value="1"></label>
+      <button id="clearBtn" type="button">Clear</button>
+      <button id="saveBtn" type="button">Save</button>
+      <span class="toast" id="toast"></span>
+    </div>
+
+    <div id="grid" class="grid"></div>
+
+    <footer>Set your Google Apps Script Web App URL at the top of this file. It writes to the <b>Weeks</b> tab.</footer>
+  </div>
+
+<script>
+// ===== CONFIG =====
+// Replace this with your deployed Apps Script Web App URL (who has access: Anyone)
+const SCRIPT_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxJNP-cIEZxcmMYg9YOUQ1YDqVo82UFLXZ49R6HyxQr5urXenmSrFQa8l7ducTTmwkODw/exec";
+
+const TEAMS = [
+  "49ers","Bears","Bengals","Bills","Broncos","Browns","Buccaneers","Cardinals",
+  "Chargers","Chiefs","Colts","Commanders","Cowboys","Dolphins","Eagles","Falcons",
+  "Giants","Jaguars","Jets","Lions","Packers","Panthers","Patriots","Raiders",
+  "Rams","Ravens","Saints","Seahawks","Steelers","Texans","Titans","Vikings"
+];
+
+const grid = document.getElementById('grid');
+const weekInput = document.getElementById('weekInput');
+const toast = document.getElementById('toast');
+
+function card(name){
+  const short = name.toLowerCase();
+  const div = document.createElement('div');
+  div.className = 'team';
+  div.dataset.name = name;
+  div.innerHTML = \`
+    <img class="logo" src="logos/\${short}.svg" alt="\${name} logo" onerror="this.src='logos/\${short}.png'">
+    <div class="name">\${name}</div>\`;
+  div.onclick = () => div.classList.toggle('active');
+  return div;
+}
+
+TEAMS.forEach(n => grid.appendChild(card(n)));
+
+document.getElementById('clearBtn').onclick = () => {
+  grid.querySelectorAll('.team.active').forEach(t => t.classList.remove('active'));
+  toast.textContent = "Cleared.";
+};
+
+document.getElementById('saveBtn').onclick = async () => {
+  const week = parseInt(weekInput.value, 10);
+  const winners = [...grid.querySelectorAll('.team.active')].map(t => t.dataset.name);
+  if(!SCRIPT_WEB_APP_URL || SCRIPT_WEB_APP_URL.startsWith("REPLACE_")){
+    alert("Set SCRIPT_WEB_APP_URL at the top of admin.html");
+    return;
+  }
+  if(!week){ alert("Enter a week number (1–21)."); return; }
+
+  try{
+    const res = await fetch(SCRIPT_WEB_APP_URL, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({week, winners})
+    });
+    const data = await res.json();
+    if(data.status === 'ok'){
+      toast.textContent = \`Saved week \${week}: \${winners.length} entr\${winners.length===1?'y':'ies'}.\`;
+    }else{
+      toast.textContent = 'Save failed — see Apps Script logs.';
+      console.error(data);
+    }
+  }catch(e){
+    toast.textContent = 'Network error saving to sheet.';
+    console.error(e);
+  }
+};
+</script>
+</body>
+</html>
