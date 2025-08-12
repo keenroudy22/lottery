@@ -1,124 +1,107 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NFL Lottery</title>
-    <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #f7f9fc;
-            color: #333;
-        }
-        .container {
-            width: 90%;
-            max-width: 1200px;
-            margin: 20px auto;
-            padding: 20px;
-            background-color: #ffffff;
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        }
-        h1 {
-            text-align: center;
-            color: #2c3e50;
-            margin-bottom: 20px;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 20px;
-        }
-        th, td {
-            padding: 14px;
-            text-align: left;
-            border-bottom: 1px solid #e0e0e0;
-            font-size: 16px;
-        }
-        th {
-            background-color: #3498db;
-            color: #ffffff;
-            font-weight: bold;
-        }
-        tr:nth-child(even) {
-            background-color: #f9f9f9;
-        }
-        tr:hover {
-            background-color: #f1f1f1;
-        }
-        .player-name {
-            font-weight: bold;
-        }
-        .teams-column {
-            white-space: pre-wrap; /* Allows text to wrap naturally */
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>NFL Lottery — Scoreboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css"/>
 </head>
 <body>
+  <header class="site-header">
     <div class="container">
-        <h1>NFL Lottery</h1>
-        <table id="dataTable">
-            <thead>
-                <tr>
-                    <th>Player</th>
-                    <th>Teams</th>
-                    <th>Winnings</th>
-                </tr>
-            </thead>
-            <tbody>
-                <!-- Data rows will be inserted here -->
-            </tbody>
-        </table>
+      <h1>🏈 NFL Lottery</h1>
+      <div class="meta">
+        <span class="legend-dot afc"></span><span class="legend-label">AFC</span>
+        <span class="legend-dot nfc"></span><span class="legend-label">NFC</span>
+        <span class="legend-badge">Weeks in (parentheses) = Scored 27</span>
+      </div>
     </div>
-    <script>
-        async function fetchSheetData() {
-            const sheetUrl = 'https://docs.google.com/spreadsheets/d/1OgXbvmA8leuimASUFLbHeWMBhncy2_r1Il9S-NrBTTQ/export?format=csv';
-            try {
-                const response = await fetch(sheetUrl);
-                const data = await response.text();
-                const rows = data.split('\n');
-                const table = document.getElementById('dataTable');
-                const tbody = table.querySelector('tbody');
+  </header>
 
-                // Clear previous content
-                tbody.innerHTML = '';
+  <main class="container">
+    <section class="controls">
+      <button id="refreshBtn" class="btn">Refresh</button>
+      <div class="note">Data pulls from your Google Sheet. Totals are shown on the right of each card.</div>
+    </section>
 
-                // Extract headers
-                const headers = rows[0].split(',');
-                if (headers.length < 6) {
-                    console.error('Unexpected number of columns in data');
-                    return;
-                }
+    <section id="cards" class="cards"></section>
+  </main>
 
-                // Extract data
-                rows.slice(1).forEach(row => {
-                    if (row.trim() === '') return; // Skip empty rows
-                    const cells = row.split(',');
-                    if (cells.length < 6) {
-                        console.error('Unexpected number of columns in data row');
-                        return;
-                    }
-                    const tr = document.createElement('tr');
-                    const player = `<span class="player-name">${cells[0]}</span>`;
-                    const afcTeams = `${cells[1]}\n${cells[2]}`;
-                    const nfcTeams = `${cells[3]}\n${cells[4]}`;
-                    const totalOwed = cells[5];
+  <footer class="site-footer">
+    <div class="container">
+      <p>Built for Kinnon • <a href="README.html">README</a></p>
+    </div>
+  </footer>
 
-                    tr.innerHTML = `
-                        <td>${player}</td>
-                        <td class="teams-column">${afcTeams}\n${nfcTeams}</td>
-                        <td>$${totalOwed}</td>
-                    `;
-                    tbody.appendChild(tr);
-                });
-            } catch (error) {
-                console.error('Error fetching Google Sheets data:', error);
-            }
-        }
+  <script>
+    const SHEET_CSV = ''; // replaced below
+    const cardsEl = document.getElementById('cards');
+    const refreshBtn = document.getElementById('refreshBtn');
 
-        fetchSheetData();
-    </script>
+    function money(v){
+      if(v === undefined || v === null) return '$0.00';
+      const n = parseFloat(String(v).replace(/[^\d.-]/g, '')) || 0;
+      return n.toLocaleString(undefined, {style:'currency', currency:'USD', minimumFractionDigits:2});
+    }
+
+    function decorateTeam(line, conf){
+      // Wrap any '(...)' into a badge
+      return line.replace(/\(([^)]+)\)/g, '<span class="week-badge">$&</span>')
+                 .trim()
+                 ? '<div class="team ' + conf + '">' + line.replace(/\(([^)]+)\)/g, '<span class="week-badge">($1)</span>') + '</div>'
+                 : '';
+    }
+
+    async function load(){
+      cardsEl.innerHTML = '<div class="loading">Loading…</div>';
+      try{
+        const res = await fetch(SHEET_CSV, {cache: 'no-store'});
+        const text = await res.text();
+        const rows = text.split('\n').filter(r => r.trim().length);
+        const header = rows.shift().split(',');
+        // Expect: Player, AFC1, AFC2, NFC1, NFC2, Total Owed
+        const items = rows.map(r => r.split(','));
+        cardsEl.innerHTML='';
+        items.forEach(cols => {
+          if(cols.length < 6) return;
+          const [player, afc1, afc2, nfc1, nfc2, total] = cols;
+          const card = document.createElement('article');
+          card.className = 'card';
+          card.innerHTML = `
+            <div class="card-head">
+              <div class="avatar">${(player || '?').charAt(0).toUpperCase()}</div>
+              <div class="who">
+                <h2>${player || '&nbsp;'}</h2>
+                <div class="sub">Current winnings</div>
+              </div>
+              <div class="total ${parseFloat(total) > 0 ? 'won' : ''}">${money(total)}</div>
+            </div>
+            <div class="teams">
+              <div class="col">
+                <div class="col-title"><span class="dot afc"></span>AFC</div>
+                ${decorateTeam(afc1 || '', 'afc')}
+                ${decorateTeam(afc2 || '', 'afc')}
+              </div>
+              <div class="col">
+                <div class="col-title"><span class="dot nfc"></span>NFC</div>
+                ${decorateTeam(nfc1 || '', 'nfc')}
+                ${decorateTeam(nfc2 || '', 'nfc')}
+              </div>
+            </div>
+          `;
+          cardsEl.appendChild(card);
+        });
+      }catch(err){
+        cardsEl.innerHTML = '<div class="error">Could not load sheet. Check the published CSV link.</div>';
+        console.error(err);
+      }
+    }
+
+    refreshBtn.addEventListener('click', load);
+    load();
+  </script>
 </body>
 </html>
