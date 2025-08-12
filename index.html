@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=5"/>
+  <link rel="stylesheet" href="styles.css?v=6"/>
   <link rel="icon" href="favicon.ico"/>
 </head>
 <body>
@@ -41,23 +41,13 @@
 
   <script>
     const SHEET_CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRIVvTEgE3OKW_mM43p_3MXRzEuZm1DIVvk6sG8GSxIlVh8sYv5Wl2GT6awHuKpuJx_rN3Q3u6Hz8gp/pub?gid=0&single=true&output=csv';
-
-    // Map team names -> logo file names found in /logos (same map as before)
-    const TEAM_LOGOS = {
-      'arizona cardinals':'cardinals.svg','atlanta falcons':'falcons.svg','carolina panthers':'panthers.svg','chicago bears':'bears.svg','dallas cowboys':'cowboys.svg','detroit lions':'lions.svg','green bay packers':'packers.svg','los angeles rams':'rams.svg','minnesota vikings':'vikings.svg','new orleans saints':'saints.svg','new york giants':'giants.svg','philadelphia eagles':'eagles.svg','san francisco 49ers':'49ers.svg','seattle seahawks':'seahawks.svg','tampa bay buccaneers':'buccaneers.svg','washington commanders':'commanders.svg',
-      'baltimore ravens':'ravens.svg','buffalo bills':'bills.svg','cincinnati bengals':'bengals.svg','cleveland browns':'browns.svg','denver broncos':'broncos.svg','houston texans':'texans.svg','indianapolis colts':'colts.svg','jacksonville jaguars':'jaguars.svg','kansas city chiefs':'chiefs.svg','las vegas raiders':'raiders.svg','los angeles chargers':'chargers.svg','miami dolphins':'dolphins.svg','new england patriots':'patriots.svg','new york jets':'jets.svg','pittsburgh steelers':'steelers.svg','tennessee titans':'titans.svg',
-      '49ers':'49ers.svg','rams':'rams.svg','chargers':'chargers.svg','raiders':'raiders.svg','chiefs':'chiefs.svg','bengals':'bengals.svg','browns':'browns.svg','broncos':'broncos.svg','vikings':'vikings.svg','eagles':'eagles.svg','cowboys':'cowboys.svg','giants':'giants.svg','packers':'packers.svg','lions':'lions.svg','saints':'saints.svg','panthers':'panthers.svg','seahawks':'seahawks.svg','buccaneers':'buccaneers.svg','commanders':'commanders.svg','patriots':'patriots.svg','dolphins':'dolphins.svg','steelers':'steelers.svg','texans':'texans.svg','colts':'colts.svg','jaguars':'jaguars.svg','titans':'titans.svg','jets':'jets.svg','bills':'bills.svg','ravens':'ravens.svg','bears':'bears.svg','cardinals':'cardinals.svg','falcons':'falcons.svg'
-    };
+    const TEAM_LOGOS = {"arizona cardinals": "cardinals.svg", "atlanta falcons": "falcons.svg", "carolina panthers": "panthers.svg", "chicago bears": "bears.svg", "dallas cowboys": "cowboys.svg", "detroit lions": "lions.svg", "green bay packers": "packers.svg", "los angeles rams": "rams.svg", "minnesota vikings": "vikings.svg", "new orleans saints": "saints.svg", "new york giants": "giants.svg", "philadelphia eagles": "eagles.svg", "san francisco 49ers": "49ers.svg", "seattle seahawks": "seahawks.svg", "tampa bay buccaneers": "buccaneers.svg", "washington commanders": "commanders.svg", "baltimore ravens": "ravens.svg", "buffalo bills": "bills.svg", "cincinnati bengals": "bengals.svg", "cleveland browns": "browns.svg", "denver broncos": "broncos.svg", "houston texans": "texans.svg", "indianapolis colts": "colts.svg", "jacksonville jaguars": "jaguars.svg", "kansas city chiefs": "chiefs.svg", "las vegas raiders": "raiders.svg", "los angeles chargers": "chargers.svg", "miami dolphins": "dolphins.svg", "new england patriots": "patriots.svg", "new york jets": "jets.svg", "pittsburgh steelers": "steelers.svg", "tennessee titans": "titans.svg", "49ers": "49ers.svg", "rams": "rams.svg", "chargers": "chargers.svg", "raiders": "raiders.svg", "chiefs": "chiefs.svg", "bengals": "bengals.svg", "browns": "browns.svg", "broncos": "broncos.svg", "vikings": "vikings.svg", "eagles": "eagles.svg", "cowboys": "cowboys.svg", "giants": "giants.svg", "packers": "packers.svg", "lions": "lions.svg", "saints": "saints.svg", "panthers": "panthers.svg", "seahawks": "seahawks.svg", "buccaneers": "buccaneers.svg", "commanders": "commanders.svg", "patriots": "patriots.svg", "dolphins": "dolphins.svg", "steelers": "steelers.svg", "texans": "texans.svg", "colts": "colts.svg", "jaguars": "jaguars.svg", "titans": "titans.svg", "jets": "jets.svg", "bills": "bills.svg", "ravens": "ravens.svg", "bears": "bears.svg", "cardinals": "cardinals.svg"};
 
     const cardsEl = document.getElementById('cards');
     const potWrap = document.getElementById('potWrap');
     const refreshBtn = document.getElementById('refreshBtn');
 
-    function money(v){
-      if(v === undefined || v === null) return '$0.00';
-      const n = parseFloat(String(v).replace(/[^\d.-]/g, '')) || 0;
-      return n.toLocaleString(undefined, {style:'currency', currency:'USD', minimumFractionDigits:2});
-    }
+    function money(v){ if(v===undefined||v===null) return '$0.00'; const n=parseFloat(String(v).replace(/[^\d.-]/g,''))||0; return n.toLocaleString(undefined,{style:'currency',currency:'USD',minimumFractionDigits:2}); }
 
     function normalizeTeamName(s){
       if(!s) return '';
@@ -77,9 +67,8 @@
       const key = normalizeTeamName(original);
       const file = TEAM_LOGOS[key] || TEAM_LOGOS[key.replace('los angeles ','la ')] || TEAM_LOGOS[key.split(' ').slice(-1)[0]];
       const logoSrc = file ? `logos/${file}` : '';
-      const nameForAlt = key || original;
       const img = logoSrc
-        ? `<img class="team-logo" src="${logoSrc}" alt="${nameForAlt} logo" onerror="this.classList.add('missing')">`
+        ? `<img class="team-logo" src="${logoSrc}" alt="${key} logo" onerror="this.classList.add('missing')">`
         : `<span class="fallback">${original.replace(/\(([^)]+)\)/g,'').trim()}</span>`;
       const badgeHTML = badges.map(b => `<span class="week-badge">(${b})</span>`).join('');
       return `<div class="team ${conf}">${img}<span class="team-name">${original.replace(/\(([^)]+)\)/g,'').trim()}</span>${badgeHTML}</div>`;
@@ -88,12 +77,12 @@
     function buildPotCard(total){
       const card = document.createElement('article');
       card.className = 'pot-card';
-      card.innerHTML = \`
+      card.innerHTML = `
         <div class="pot-inner">
           <div class="pot-title">Weekly POT</div>
-          <div class="pot-amount">\${money(total)}</div>
+          <div class="pot-amount">${money(total)}</div>
           <div class="pot-sub">Rolls over if no winner</div>
-        </div>\`;
+        </div>`;
       return card;
     }
 
@@ -104,52 +93,41 @@
         const res = await fetch(SHEET_CSV, {cache: 'no-store'});
         const text = await res.text();
         const rows = text.split('\n').filter(r => r.trim().length);
-        const header = rows.shift().split(',');
+        rows.shift(); // headers
         const items = rows.map(r => r.split(','));
         cardsEl.innerHTML='';
 
-        // Pull out POT row (case-insensitive)
         let potRow = null;
         const players = [];
-        items.forEach(cols => {
-          if(cols.length < 6) return;
-          if(String(cols[0]).trim().toLowerCase() === 'pot'){
-            potRow = cols;
-          } else {
-            players.push(cols);
-          }
+        items.forEach(cols => { if(cols.length < 6) return;
+          if(String(cols[0]).trim().toLowerCase() === 'pot'){ potRow = cols; } else { players.push(cols); }
         });
 
-        // Render POT at the top/center if present
-        if(potRow){
-          const potTotal = potRow[5];
-          potWrap.appendChild(buildPotCard(potTotal));
-        }
+        if(potRow){ const potTotal = potRow[5]; potWrap.appendChild(buildPotCard(potTotal)); }
 
-        // Render player cards
         players.forEach(cols => {
           const [player, afc1, afc2, nfc1, nfc2, total] = cols;
           const safePlayer = player && player.trim() ? player : 'n/a';
           const card = document.createElement('article');
           card.className = 'card';
-          card.innerHTML = \`
+          card.innerHTML = `
             <div class="card-head">
-              <div class="avatar">\${(safePlayer || '?').charAt(0).toUpperCase()}</div>
-              <div class="who"><h2>\${safePlayer}</h2><div class="sub">Current winnings</div></div>
-              <div class="total \${parseFloat(total) > 0 ? 'won' : ''}">\${money(total)}</div>
+              <div class="avatar">${(safePlayer || '?').charAt(0).toUpperCase()}</div>
+              <div class="who"><h2>${safePlayer}</h2><div class="sub">Current winnings</div></div>
+              <div class="total ${parseFloat(total) > 0 ? 'won' : ''}">${money(total)}</div>
             </div>
             <div class="teams">
               <div class="col">
                 <div class="col-title"><span class="dot afc"></span>AFC</div>
-                \${teamToLogoHTML(afc1 || '', 'afc')}
-                \${teamToLogoHTML(afc2 || '', 'afc')}
+                ${teamToLogoHTML(afc1 || '', 'afc')}
+                ${teamToLogoHTML(afc2 || '', 'afc')}
               </div>
               <div class="col">
                 <div class="col-title"><span class="dot nfc"></span>NFC</div>
-                \${teamToLogoHTML(nfc1 || '', 'nfc')}
-                \${teamToLogoHTML(nfc2 || '', 'nfc')}
+                ${teamToLogoHTML(nfc1 || '', 'nfc')}
+                ${teamToLogoHTML(nfc2 || '', 'nfc')}
               </div>
-            </div>\`;
+            </div>`;
           cardsEl.appendChild(card);
         });
       }catch(err){
