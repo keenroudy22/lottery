@@ -28,29 +28,36 @@ body{
   backdrop-filter:saturate(140%) blur(6px);
   border-bottom:1px solid rgba(255,255,255,.06);
 }
-.site-header h1{
-  margin:0; padding:18px 0 6px; letter-spacing:.2px; font-weight:800;
-}
-.site-header .meta{
-  display:flex; align-items:center; gap:14px; padding:0 0 16px; color:var(--muted); font-size:14px;
-}
+.site-header h1{ margin:0; padding:18px 0 6px; letter-spacing:.2px; font-weight:800; }
+.site-header .meta{ display:flex; align-items:center; gap:14px; padding:0 0 16px; color:var(--muted); font-size:14px; }
 .legend-dot,.dot{display:inline-block; width:10px; height:10px; border-radius:50%}
 .legend-dot.afc,.dot.afc{background:var(--afc)}
 .legend-dot.nfc,.dot.nfc{background:var(--nfc)}
 .legend-label{margin-right:10px}
 .legend-badge{padding:4px 8px; background:rgba(255,209,102,.15); border:1px solid rgba(255,209,102,.35); border-radius:999px}
 
-.controls{display:flex; align-items:center; gap:12px; margin:24px 0 8px}
+.controls{display:flex; align-items:center; gap:12px; margin:10px 0 8px}
 .note{color:var(--muted); font-size:14px}
 
-.btn{
-  border:1px solid rgba(255,255,255,.15);
-  background:linear-gradient(180deg, #1a2742, #111a30);
-  color:var(--text); padding:10px 14px; border-radius:12px; cursor:pointer;
-}
+.btn{ border:1px solid rgba(255,255,255,.15); background:linear-gradient(180deg, #1a2742, #111a30); color:var(--text); padding:10px 14px; border-radius:12px; cursor:pointer; }
 .btn:hover{border-color:rgba(255,255,255,.3)}
 
-.cards{ display:grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap:16px; padding:12px 0 36px}
+.pot-wrap{ display:grid; place-items:center; padding:16px 0 4px }
+.pot-card{
+  display:grid; place-items:center;
+  width:min(760px, 96%);
+  margin:16px auto 4px;
+  background:linear-gradient(180deg, #14203a, #0f192f);
+  border:1px solid rgba(255,255,255,.10);
+  border-radius:22px;
+  box-shadow:0 14px 32px rgba(0,0,0,.35);
+}
+.pot-inner{ padding:18px 20px 16px; text-align:center }
+.pot-title{ font-weight:800; letter-spacing:.4px; text-transform:uppercase; font-size:13px; color:#a9c2ff; opacity:.85 }
+.pot-amount{ font-weight:900; font-size:40px; line-height:1.1; margin:6px 0 2px; color:var(--win) }
+.pot-sub{ color:var(--muted); font-size:12px }
+
+.cards{ display:grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap:18px; padding:12px 0 36px}
 .card{
   background:linear-gradient(180deg, var(--panel), var(--panel-2));
   border:1px solid rgba(255,255,255,.08);
@@ -60,12 +67,8 @@ body{
 }
 .card:hover{ transform:translateY(-2px); box-shadow: 0 16px 34px rgba(0,0,0,.45)}
 
-.card-head{display:flex; align-items:center; gap:12px; margin-bottom:10px}
-.avatar{
-  width:44px; height:44px; border-radius:12px; display:grid; place-items:center;
-  background:linear-gradient(135deg, #213357, #1b2a4a);
-  color:#cfe1ff; font-weight:800; font-size:18px; border:1px solid rgba(255,255,255,.08);
-}
+.card-head{display:flex; align-items:center; gap:12px; margin-bottom:12px}
+.avatar{ width:44px; height:44px; border-radius:12px; display:grid; place-items:center; background:linear-gradient(135deg, #213357, #1b2a4a); color:#cfe1ff; font-weight:800; font-size:18px; border:1px solid rgba(255,255,255,.08); }
 .who h2{margin:0; font-size:18px}
 .who .sub{color:var(--muted); font-size:12px}
 .total{margin-left:auto; font-weight:800; font-size:18px; color:#cbd9ff}
@@ -75,27 +78,17 @@ body{
 .col{background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.06); border-radius:14px; padding:10px}
 .col-title{display:flex; align-items:center; gap:8px; font-size:12px; color:var(--muted); margin-bottom:6px; text-transform:uppercase; letter-spacing:.5px}
 
-.team{display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:10px; margin-bottom:6px; border:1px dashed rgba(255,255,255,.08)}
+.team{display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:10px; margin-bottom:6px; border:1px dashed rgba(255,255,255,.08)}
 .team.afc{background:rgba(211,84,0,.08)}
 .team.nfc{background:rgba(46,134,222,.08)}
 
-.team-logo{width:28px; height:28px; object-fit:contain; background:rgba(255,255,255,.05); border-radius:6px; padding:4px; border:1px solid rgba(255,255,255,.06)}
-.team-logo.missing{display:none} /* fall back to text if logo missing */
+.team-logo{width:40px; height:40px; object-fit:contain; background:rgba(255,255,255,.05); border-radius:8px; padding:6px; border:1px solid rgba(255,255,255,.06)}
+.team-logo.missing{display:none}
 .team .fallback{font-weight:600; opacity:.9}
-.team .team-name{display:none;} /* hide text label by default; keep for accessibility */
+.team .team-name{display:none;}
 .team:hover .team-name{display:inline; color:var(--muted); font-size:12px}
 
-.week-badge{
-  display:inline-block;
-  padding:2px 8px;
-  margin-left:6px;
-  font-size:12px;
-  line-height:1.6;
-  border-radius:999px;
-  background:rgba(255,209,102,.16);
-  border:1px solid rgba(255,209,102,.42);
-  color:#ffe29f;
-}
+.week-badge{ display:inline-block; padding:2px 8px; margin-left:6px; font-size:12px; line-height:1.6; border-radius:999px; background:rgba(255,209,102,.16); border:1px solid rgba(255,209,102,.42); color:#ffe29f; }
 
 .loading,.error{ padding:40px 0; text-align:center; color:var(--muted)}
 
