@@ -6,7 +6,7 @@
   <title>NFL Lottery — Scoreboard</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=9"/>
+  <link rel="stylesheet" href="styles.css?v=11"/>
   <link rel="icon" href="favicon.ico"/>
 </head>
 <body>
@@ -16,7 +16,7 @@
     <div class="meta">
       <span class="legend-dot afc"></span><span class="legend-label">AFC</span>
       <span class="legend-dot nfc"></span><span class="legend-label">NFC</span>
-      <span class="legend-badge">Weeks in (parentheses) = Winner</span>
+      <span class="legend-badge">Weeks in (parentheses) = Scored 27</span>
     </div>
   </div>
 </header>
@@ -25,7 +25,8 @@
   <section id="potWrap" class="pot-wrap" aria-live="polite"></section>
 
   <section class="controls">
-    <div class="note">Admin: <a href="admin.html">mark winners</a></div>
+    <button id="refreshBtn" class="btn">Refresh</button>
+    <div class="note">Data pulls from your Google Sheet. Totals are shown on the right of each card.</div>
   </section>
 
   <section id="cards" class="cards"></section>
@@ -36,22 +37,21 @@
 </footer>
 
 <script>
-// === CONFIG ===
-// Players sheet (your current sheet/tab published as CSV)
-const SHEET_PLAYERS_CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRIVvTEgE3OKW_mM43p_3MXRzEuZm1DIVvk6sG8GSxIlVh8sYv5Wl2GT6awHuKpuJx_rN3Q3u6Hz8gp/pub?gid=0&single=true&output=csv';
-// Weeks sheet (publish a "Weeks" tab as CSV; set link here)
-const SHEET_WEEKS_CSV = 'https://docs.google.com/spreadsheets/d/1OgXbvmA8leuimASUFLbHeWMBhncy2_r1Il9S-NrBTTQ/edit?gid=740088472#gid=740088472';
-// Pot rules
-const BUY_IN = 20;           // $ per player per week
-const COUNT_PLAYERS = 8;     // number of players contributing
+/* ===== CONFIG (Players CSV only) ===== */
+const SHEET_CSV =
+  'https://docs.google.com/spreadsheets/d/e/2PACX-1vRIVvTEgE3OKW_mM43p_3MXRzEuZm1DIVvk6sG8GSxIlVh8sYv5Wl2GT6awHuKpuJx_rN3Q3u6Hz8gp/pub?gid=0&single=true&output=csv';
 
 const cardsEl = document.getElementById('cards');
 const potWrap = document.getElementById('potWrap');
+const refreshBtn = document.getElementById('refreshBtn');
 
-function money(n){ return (parseFloat(n)||0).toLocaleString(undefined,{style:'currency',currency:'USD'}); }
-
-function normBaseName(s){
-  // normalize and return the last word (e.g., "Minnesota Vikings" -> "vikings"; "49ers" -> "49ers")
+/* ===== Helpers ===== */
+function money(v){
+  const n = parseFloat(String(v).replace(/[^\d.-]/g,'')) || 0;
+  return n.toLocaleString(undefined,{style:'currency',currency:'USD',minimumFractionDigits:2});
+}
+function baseTeamName(s){
+  // strip badges like (9)(10), punctuation, collapse spaces, lower → last word (e.g. "Minnesota Vikings" -> "vikings")
   const cleaned = String(s||'')
     .replace(/\(([^)]*)\)/g,'')
     .replace(/[–—]/g,'-')
@@ -60,122 +60,90 @@ function normBaseName(s){
     .trim()
     .toLowerCase();
   if(!cleaned) return '';
-  const parts = cleaned.split(' ');
-  return parts[parts.length-1];
+  return cleaned.split(' ').slice(-1)[0];
+}
+function teamCellHTML(original, conf){
+  if(!original || !original.trim()) return '';
+  const badges = [...original.matchAll(/\(([^)]+)\)/g)].map(m=>m[1]);
+  const base = baseTeamName(original);
+  const logoSrc = `logos/${base}.svg`;
+  const img = `<img class="team-logo" src="${logoSrc}" alt="${base} logo" onerror="this.classList.add('missing')">`;
+  const name = original.replace(/\(([^)]+)\)/g,'').trim();
+  const badgeHTML = badges.map(b => `<span class="week-badge">(${b})</span>`).join('');
+  return `<div class="team ${conf}">${img}<span class="team-name">${name}</span>${badgeHTML}</div>`;
 }
 
-function logoHTML(team){
-  if(!team) return '';
-  const base = normBaseName(team);
-  const src = `logos/${base}.svg`;
-  const img = `<img class="team-logo" src="${src}" alt="${base} logo" onerror="this.classList.add('missing')">`;
-  return `<div class="team">${img}<span class="team-name">${team.replace(/\(([^)]*)\)/g,'').trim()}</span>`;
-}
-
-function badgesHTML(weeksMap, team){
-  const base = normBaseName(team);
-  const weeks = weeksMap.get(base) || [];
-  return weeks.map(w => `<span class="week-badge">(${w})</span>`).join('');
-}
-
-async function getCSV(url){
-  const res = await fetch(url, {cache:'no-store'});
-  const text = await res.text();
-  return text.split('\n').filter(Boolean).map(r => r.split(','));
-}
-
+/* ===== Main ===== */
 async function load(){
   cardsEl.innerHTML = '<div class="loading">Loading…</div>';
   potWrap.innerHTML = '';
 
-  const [playersRows, weeksRows] = await Promise.all([getCSV(SHEET_PLAYERS_CSV), getCSV(SHEET_WEEKS_CSV)]);
+  try{
+    const res = await fetch(SHEET_CSV, {cache:'no-store'});
+    const text = await res.text();
+    const rows = text.split('\n').filter(r => r.trim().length);
+    rows.shift(); // headers
 
-  // Build weeks map: base team -> [weeks]
-  weeksRows.shift(); // header
-  const weeksMap = new Map();
-  const weekSet = new Set();
-  for(const row of weeksRows){
-    const week = parseInt(row[0],10);
-    const team = (row[1]||'').trim();
-    if(!week || !team) continue;
-    const base = normBaseName(team);
-    if(!weeksMap.has(base)) weeksMap.set(base, []);
-    weeksMap.get(base).push(week);
-    weekSet.add(week);
-  }
-  const weeksSorted = [...weekSet].sort((a,b)=>a-b);
+    const players = [];
+    let potTotal = null;
 
-  // Build players list (skip POT row)
-  playersRows.shift(); // header
-  const players = [];
-  for(const cols of playersRows){
-    if(cols.length < 6) continue;
-    const [player, afc1, afc2, nfc1, nfc2] = cols;
-    if(!player || player.toLowerCase()==='pot') continue;
-    players.push({player, teams:[afc1,afc2,nfc1,nfc2]});
-  }
-
-  // Compute totals & current week pot with rollover
-  const basePot = BUY_IN * COUNT_PLAYERS;
-  const totals = new Map(players.map(p=>[p.player,0]));
-  let carry = 0;
-  const lastWeek = weeksSorted.length ? weeksSorted[weeksSorted.length-1] : 1;
-  let lastWeekWinners = 0;
-  weeksSorted.forEach(week => {
-    const winners = new Set();
-    players.forEach(p => {
-      const hit = p.teams.some(t => (weeksMap.get(normBaseName(t))||[]).includes(week));
-      if(hit) winners.add(p.player);
+    rows.forEach(r => {
+      const cols = r.split(',');
+      if(cols.length < 6) return;
+      const [player, afc1, afc2, nfc1, nfc2, total] = cols;
+      if(String(player).trim().toLowerCase() === 'pot'){
+        potTotal = total;
+      }else{
+        players.push({player, afc1, afc2, nfc1, nfc2, total});
+      }
     });
-    let pot = basePot + carry;
-    if(winners.size === 0){
-      carry = pot;
-    }else{
-      const share = pot / winners.size;
-      winners.forEach(name => totals.set(name, (totals.get(name)||0) + share));
-      carry = 0;
-    }
-    if(week === lastWeek){
-      lastWeekWinners = winners.size;
-      potWrap.innerHTML = `<article class="pot-card"><div class="pot-inner">
-        <div class="pot-title">Weekly POT (Week ${week})</div>
-        <div class="pot-amount">${money(pot)}</div>
-        <div class="pot-sub">${winners.size ? winners.size + ' winner' + (winners.size>1?'s':'') : 'Rolls over if no winner'}</div>
-      </div></article>`;
-    }
-  });
 
-  // Render
-  cardsEl.innerHTML = '';
-  players.forEach(p => {
-    const [afc1,afc2,nfc1,nfc2] = p.teams;
-    const card = document.createElement('article');
-    card.className = 'card';
-    card.innerHTML = `
-      <div class="card-head">
-        <div class="avatar">${p.player.charAt(0).toUpperCase()}</div>
-        <div class="who">
-          <h2>${p.player}</h2>
-          <div class="sub">Current winnings</div>
+    // POT card (centered). If no POT row exists, hide the section.
+    if(potTotal !== null){
+      potWrap.innerHTML = `
+        <article class="pot-card">
+          <div class="pot-inner">
+            <div class="pot-title">Weekly POT</div>
+            <div class="pot-amount">${money(potTotal)}</div>
+            <div class="pot-sub">Rolls over if no winner</div>
+          </div>
+        </article>`;
+    }else{
+      potWrap.innerHTML = '';
+    }
+
+    // Player cards
+    cardsEl.innerHTML = '';
+    players.forEach(p => {
+      const card = document.createElement('article');
+      card.className = 'card';
+      card.innerHTML = `
+        <div class="card-head">
+          <div class="avatar">${(p.player||'?').trim().charAt(0).toUpperCase()}</div>
+          <div class="who"><h2>${p.player||'n/a'}</h2><div class="sub">Current winnings</div></div>
+          <div class="total ${(parseFloat(p.total)||0) > 0 ? 'won' : ''}">${money(p.total)}</div>
         </div>
-        <div class="total ${totals.get(p.player)>0 ? 'won' : ''}">${money(totals.get(p.player)||0)}</div>
-      </div>
-      <div class="teams">
-        <div class="col">
-          <div class="col-title"><span class="dot afc"></span>AFC</div>
-          <div>${logoHTML(afc1)}${badgesHTML(weeksMap, afc1)}</div>
-          <div>${logoHTML(afc2)}${badgesHTML(weeksMap, afc2)}</div>
-        </div>
-        <div class="col">
-          <div class="col-title"><span class="dot nfc"></span>NFC</div>
-          <div>${logoHTML(nfc1)}${badgesHTML(weeksMap, nfc1)}</div>
-          <div>${logoHTML(nfc2)}${badgesHTML(weeksMap, nfc2)}</div>
-        </div>
-      </div>`;
-    cardsEl.appendChild(card);
-  });
+        <div class="teams">
+          <div class="col">
+            <div class="col-title"><span class="dot afc"></span>AFC</div>
+            ${teamCellHTML(p.afc1, 'afc')}
+            ${teamCellHTML(p.afc2, 'afc')}
+          </div>
+          <div class="col">
+            <div class="col-title"><span class="dot nfc"></span>NFC</div>
+            ${teamCellHTML(p.nfc1, 'nfc')}
+            ${teamCellHTML(p.nfc2, 'nfc')}
+          </div>
+        </div>`;
+      cardsEl.appendChild(card);
+    });
+  }catch(err){
+    cardsEl.innerHTML = '<div class="error">Could not load the sheet. Check the published CSV link.</div>';
+    console.error(err);
+  }
 }
 
+refreshBtn.addEventListener('click', load);
 load();
 </script>
 </body>
