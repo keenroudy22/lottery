@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css?v=11"/>
-  <link rel="icon" href="favicon.ico"/>
+  <link rel="icon" href="./favicon.ico" type="image/x-icon">
   <link rel="manifest" href="/lottery/manifest.json">
   <meta name="theme-color" content="#10192b">
   <link rel="apple-touch-icon" href="/lottery/icons/icon-192.png">
@@ -31,11 +31,29 @@
   <section id="potWrap" class="pot-wrap" aria-live="polite"></section>
 
   <section class="controls">
-    <button id="refreshBtn" class="btn">Refresh</button>
+    <button id="refreshBtn" class="btn">Refresh</button> <button id="rulesBtn" class="btn-secondary">Rules</button>
     <div class="note">Totals are shown on the right of each card.</div>
   </section>
 
   <section id="cards" class="cards"></section>
+
+<dialog id="rulesDialog">
+  <form method="dialog" class="rules-modal">
+    <h3>League Rules</h3>
+    <ul>
+      <li><strong>Buy‑in:</strong> $20 per player each week.</li>
+      <li><strong>Winners:</strong> If there are multiple winners in a week, the pot is split evenly.</li>
+      <li><strong>No winner:</strong> The pot rolls over to the next week.</li>
+      <li><strong>Ties:</strong> Ties count as a win for both players’ cards (adjust if your league differs).</li>
+      <li><strong>Updates:</strong> Scores are updated from the linked Google Sheet. Use the Admin page to post weekly results.</li>
+    </ul>
+    <p class="muted">Edit this text in <code>index.html</code> to match your exact league rules.</p>
+    <menu>
+      <button value="close" class="btn-close">Close</button>
+    </menu>
+  </form>
+</dialog>
+
 </main>
 
 <footer class="site-footer">
@@ -107,6 +125,17 @@ async function load(){
   }
 }
 refreshBtn.addEventListener('click', load); load();
+</script>
+
+<script>
+(function(){
+  const btn = document.getElementById('rulesBtn');
+  const dlg = document.getElementById('rulesDialog');
+  if(btn && dlg){
+    btn.addEventListener('click', ()=> dlg.showModal());
+    dlg.addEventListener('click', (e)=>{ if(e.target===dlg) dlg.close(); });
+  }
+})();
 </script>
 </body>
 </html>
