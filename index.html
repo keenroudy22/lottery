@@ -1,46 +1,64 @@
 <!DOCTYPE html>
-
 <html lang="en">
 <head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Keen’s NFL Lottery — 7’s Heaven</title>
-<link href="https://fonts.googleapis.com" rel="preconnect"/>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&amp;display=swap" rel="stylesheet"/>
-<link href="styles.css?v=11" rel="stylesheet">
-<link href="./favicon.ico" rel="icon" type="image/x-icon"/>
-<link href="/lottery/manifest.json" rel="manifest"/>
-<meta content="#10192b" name="theme-color"/>
-<link href="/lottery/icons/icon-192.png" rel="apple-touch-icon"/>
-<meta content="yes" name="apple-mobile-web-app-capable"/>
-<meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"/>
-<script defer="" src="/lottery/a2hs.js"></script>
-</link></head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>LOTTO</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css?v=11"/>
+  <link rel="icon" href="./favicon.ico" type="image/x-icon">
+  <link rel="manifest" href="/lottery/manifest.json">
+  <meta name="theme-color" content="#10192b">
+  <link rel="apple-touch-icon" href="/lottery/icons/icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <script src="/lottery/a2hs.js" defer></script>
+</head>
 <body>
 <header class="site-header">
-<div class="container">
-<h1>🏈 Keens NFL Lottery — 7’s Heaven</h1>
-<div class="meta">
-<span class="legend-dot afc"></span><span class="legend-label">AFC</span>
-<span class="legend-dot nfc"></span><span class="legend-label">NFC</span>
-<span class="legend-badge">WINNER = Weeks in (parentheses)</span>
-<div class="legend-sub">Any team scoring 17, 27, or 37 wins the pot.</div></div>
-</div>
+  <div class="container">
+    <h1>🏈 Keens NFL Lottery</h1>
+    <div class="meta">
+      <span class="legend-dot afc"></span><span class="legend-label">AFC</span>
+      <span class="legend-dot nfc"></span><span class="legend-label">NFC</span>
+      <span class="legend-badge">WINNER = Weeks in (parentheses)</span>
+    </div>
+  </div>
 </header>
+
 <main class="container">
-<section aria-live="polite" class="pot-wrap" id="potWrap"></section>
-<section class="controls">
-<button class="btn" id="refreshBtn">Refresh</button> <button class="btn-secondary" id="rulesBtn">Rules</button>
-<div class="note">Totals are shown on the right of each card.</div>
-</section>
-<section class="cards" id="cards"></section>
+  <section id="potWrap" class="pot-wrap" aria-live="polite"></section>
+
+  <section class="controls">
+    <button id="refreshBtn" class="btn">Refresh</button> <button id="rulesBtn" class="btn-secondary">Rules</button>
+    <div class="note">Totals are shown on the right of each card.</div>
+  </section>
+
+  <section id="cards" class="cards"></section>
+
 <dialog id="rulesDialog">
-<form class="rules-modal" method="dialog"><h3>League Rules — 7’s Heaven</h3><ul><li><strong>How to win:</strong> If any of your four teams score <strong>17, 27, or 37</strong> points in a week, you win.</li><li><strong>Teams:</strong> Each player has 4 teams — <em>2 AFC</em> and <em>2 NFC</em>.</li><li><strong>Multiple winners:</strong> Pot splits evenly among all winners that week.</li><li><strong>No winner:</strong> Pot rolls over to next week.</li><li><strong>Weekly entry:</strong> $20 per player.</li><li><strong>Progressive pot:</strong> If nobody wins, the pot increases by $20 the following week and continues to grow until someone hits 7’s Heaven.</li><li><strong>Week 18:</strong> If there’s still no winner by Week 18, the pot is returned evenly to all players.</li></ul><p class="muted">This league uses 7’s Heaven mode. Edit this text in index.html if your house rules differ.</p><menu><button class="btn-close" value="close">Close</button></menu></form>
+  <form method="dialog" class="rules-modal">
+    <h3>League Rules</h3>
+    <ul>
+      <li><strong>Buy‑in:</strong> $20 per player each week.</li>
+      <li><strong>Winners:</strong> If there are multiple winners in a week, the pot is split evenly.</li>
+      <li><strong>No winner:</strong> The pot rolls over to the next week.</li>
+      <li><strong>Week 18:</strong> No Winners, the pot is given back to players evenly.</li>
+    </ul>
+    <p class="muted">Edit this text in <code>index.html</code> to match your exact league rules.</p>
+    <menu>
+      <button value="close" class="btn-close">Close</button>
+    </menu>
+  </form>
 </dialog>
+
 </main>
+
 <footer class="site-footer">
-<div class="container"><p>Designed by Keen</p></div>
+  <div class="container"><p>Designed by Keen</p></div>
 </footer>
+
 <script>
 const SHEET_CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRIVvTEgE3OKW_mM43p_3MXRzEuZm1DIVvk6sG8GSxIlVh8sYv5Wl2GT6awHuKpuJx_rN3Q3u6Hz8gp/pub?gid=0&single=true&output=csv';
 const cardsEl = document.getElementById('cards');
@@ -107,6 +125,7 @@ async function load(){
 }
 refreshBtn.addEventListener('click', load); load();
 </script>
+
 <script>
 (function(){
   const btn = document.getElementById('rulesBtn');
